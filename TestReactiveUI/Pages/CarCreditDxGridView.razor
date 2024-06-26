@@ -1,0 +1,94 @@
+﻿@using System.Collections.ObjectModel
+@using System.Reactive.Linq
+@using DynamicData
+@using DynamicData.Binding
+@using Models.Credit
+@using ReactiveUI
+
+<h3>Таблиза с ReadOnlyObservableCollection BankCredit proxies2</h3>
+<DxGrid Data="@proxies2">
+    <Columns>
+        <DxGridDataColumn FieldName="Id" />
+        <DxGridDataColumn FieldName="Car" />
+        <DxGridDataColumn FieldName="Summ" />
+    </Columns>
+</DxGrid>
+
+<DxButton Click="ButtonClick" Text="Change Car Price index 0"></DxButton>
+<h3>Таблиза с ReadOnlyObservableCollection CarCreditModelProxy proxies2</h3>
+<DxGrid Data="@Model.Proxies">
+    <Columns>
+        <DxGridDataColumn FieldName=@nameof(CarCreditModelProxy.Id) />
+        <DxGridDataColumn FieldName=@nameof(CarCreditModelProxy.CarCaption) />
+        <DxGridDataColumn FieldName=@nameof(CarCreditModelProxy.CarPrice) />
+        <DxGridDataColumn FieldName=@nameof(CarCreditModelProxy.BankCreditPriceKoef) />
+        <DxGridDataColumn FieldName=@nameof(CarCreditModelProxy.BankCreditPriceCaption) />
+        <DxGridDataColumn FieldName=@nameof(CarCreditModelProxy.BankCreditSumm) />
+    </Columns>
+</DxGrid>
+<DxGrid Data="@proxies3">
+    <Columns>
+        <DxGridDataColumn FieldName=@nameof(CarCreditModelProxy.Id) />
+        <DxGridDataColumn FieldName=@nameof(CarCreditModelProxy.CarCaption) />
+        <DxGridDataColumn FieldName=@nameof(CarCreditModelProxy.CarPrice) />
+        <DxGridDataColumn FieldName=@nameof(CarCreditModelProxy.BankCreditPriceKoef) />
+        <DxGridDataColumn FieldName=@nameof(CarCreditModelProxy.BankCreditPriceCaption) />
+        <DxGridDataColumn FieldName=@nameof(CarCreditModelProxy.BankCreditSumm) />
+    </Columns>
+</DxGrid>
+@*<DxGrid Data="@Model.Proxies">
+    <Columns>
+        <DxGridDataColumn>
+            <CellDisplayTemplate>
+                @{
+                    var proxy = context.Value as CarCreditModelProxy;
+                }
+                <DxTextBox Text="@proxy.CarCaption"></DxTextBox>
+            </CellDisplayTemplate>
+        </DxGridDataColumn>
+    </Columns>
+</DxGrid>*@
+@code {
+    [Parameter]
+    public CarCreditListViewModel Model { get; set; } 
+    [Parameter]
+    public IEnumerable<BankCredit> Data { get; set; } 
+    public ReadOnlyObservableCollection<BankCredit> proxies2;
+    public ReadOnlyObservableCollection<CarCreditModelProxy> proxies3;
+    protected override void OnParametersSet() {
+        base.OnParametersSet();
+
+        var connect = Model.Objects
+            .Connect();
+        var disposable = Model.Objects
+            .Connect() // make the source an observable change set
+            .Sort(SortExpressionComparer<BankCredit>.Ascending(t => t.Id))
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .Bind(out proxies2)
+            .Subscribe();
+        var disposable2 = Model.Objects
+            .Connect() // make the source an observable change set
+            .Sort(SortExpressionComparer<BankCredit>.Ascending(t => t.Id))
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .Transform(x=> new CarCreditModelProxy(x))
+            .Bind(out proxies3)
+            .Subscribe(x=>Method(x));
+    }
+    
+    private void ButtonClick()
+    {
+        var bankCridet = Model.Objects.Items.FirstOrDefault(x => x.Id == 0);
+        bankCridet.Car.Price = bankCridet.Car.Price + 100000;
+        Model.Objects.AddOrUpdate(bankCridet);
+    }
+
+    //В этом методе можно отслеживать изменения
+    private void Method(IChangeSet<CarCreditModelProxy, int> changeSet)
+    {
+        foreach (var change in changeSet)
+        {
+            //DO Something
+        }
+    }
+
+}

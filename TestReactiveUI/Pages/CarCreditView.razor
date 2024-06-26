@@ -1,0 +1,79 @@
+﻿@using Models.Credit
+@using DynamicData.Binding
+@using DynamicData
+@using System.Collections.ObjectModel
+@using System.Reactive.Linq
+@using ReactiveUI
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<CarCreditListViewModel>
+<h3>CarCreditView</h3>
+<div>
+    <button class="btn btn-primary" @onclick="Change">Change</button>
+    <button class="btn btn-primary" @onclick="Add">ChangeAdd</button>
+    
+</div>
+<EditForm Model="@SelectedObject" >
+    <InputNumber @bind-Value="SelectedObject.Car.Price"></InputNumber>
+        <button type="submit">Submit</button>
+    </EditForm>
+<table>
+    <tr>
+        <th>Id</th>
+        <th>Car</th>
+        <th>Price</th>
+        <th>Koeficient</th>
+        <th>CreditCaption</th>
+        <th>Summ</th>
+    </tr>
+    @foreach (var proxy in proxies2) {
+        <tr @onclick="@(e=> OnClick(proxy))">
+            <td>@proxy.Id</td>
+            <td>@proxy.Car.Caption</td>
+            <td>@proxy.Car.Price</td>
+            <td>@proxy.BankCreditPrice.Koef</td>
+            <td>@proxy.BankCreditPrice.Caption</td>
+            <td>@proxy.Summ</td>
+        </tr>
+    }
+</table>
+
+@code {
+    [Parameter]
+    public CarCreditListViewModel Model { get; set; }
+    ReadOnlyObservableCollection<CarCreditModelProxy> proxies;
+    ReadOnlyObservableCollection<BankCredit> proxies2;
+    BankCredit SelectedObject = null;
+    
+    protected override void OnParametersSet() {
+        base.OnParametersSet();
+
+        var disposable = Model.Objects
+         .Connect() // make the source an observable change set
+         .Sort(SortExpressionComparer<BankCredit>.Ascending(t => t.Id))
+         .ObserveOn(RxApp.MainThreadScheduler)
+         .Bind(out proxies2)
+         .Subscribe();
+
+        SelectedObject = proxies2.First();
+    }
+    private void OnClick(BankCredit credit)
+    {
+        SelectedObject = credit;
+    }
+    private void Change() {
+        var a = Model.Objects.Items.First();
+        a.Summ = a.Summ + 10;
+    }
+    private void Add()
+    {
+        var newObj = new BankCredit(-1);
+        newObj.BankCreditPrice = new BankCreditPrice();
+        newObj.Car = new Car();
+        Model.Objects.AddOrUpdate(newObj);
+    }
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+    }
+    
+
+}
